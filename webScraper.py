@@ -1,9 +1,11 @@
 # http://www.environment.gov.au/cgi-bin/sprat/public/publicthreatenedlist.pl?wanted=fauna
 # http://zetcode.com/python/beautifulsoup/#:~:text=BeautifulSoup%20is%20a%20Python%20library,%2C%20navigable%20string%2C%20or%20comment.
 # https://www.youtube.com/watch?v=ng2o98k983k
+# https://www.pluralsight.com/guides/web-scraping-with-beautiful-soup
 
 import requests
 from bs4 import BeautifulSoup
+import csv
 
 class EnvironmentSpider:
     def __init__(self):
@@ -70,7 +72,37 @@ class EnvironmentSpider:
         except BaseException as e:
             return f"Error {str(e)}"
 
-    def scrape(self):
+    def extractMainTable(self, saveAsCSV):
+        try:
+            csvheader = ["category", "hyperlink", "fauna"]
+            print(csvheader)
+            datalist = []
+
+            table = self.soup.find(id="threatsummary")
+            rows = table.find_all('tr')
+            for row in rows:
+                th = row.th
+                category = th.get_text()
+                cells = row.find_all('td')
+                for td in cells:
+                    link = td.a['href']
+                    fauna = td.a.get_text()
+                    
+                    item = [category,link,fauna]
+                    print("Next: ",item)
+                    datalist.append(item)
+            # https://docs.python.org/3/library/csv.html
+            with open(saveAsCSV, 'w') as csvfile:
+                csvwriter = csv.writer(csvfile=csvfile)
+                csvwriter.writerow(csvheader)
+                csvwriter.writerows(datalist)
+
+        except BaseException as e:
+            print(f"Error: {str(e)}")
+            return False
+        return True
+
+    def showPageHeaders(self):
         heading = self.getMainHeader()
         print(f"Main Heading: {heading}")
         sub = self.getContentHeader()
@@ -103,11 +135,11 @@ def runSpider():
     
     if ok:
         print("Web scraping started...")
-        spider.scrape()
-    
+        spider.showPageHeaders()
+        spider.extractMainTable(saveAsCSV="maintable.csv")
     else:
         print("Can't load website")
     
-# https://www.pluralsight.com/guides/web-scraping-with-beautiful-soup
+
 if __name__ == "__main__":
     runSpider()
