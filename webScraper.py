@@ -80,17 +80,25 @@ class EnvironmentSpider:
 
             table = self.soup.find(id="threatsummary")
             rows = table.find_all('tr')
+            
             for row in rows:
+                print("row:",row)
                 th = row.th
                 category = th.get_text()
-                cells = row.find_all('td')
-                for td in cells:
-                    link = td.a['href']
-                    fauna = td.a.get_text()
-                    
-                    item = [category,link,fauna]
+                cell = row.find('td')
+                items = cell.find_all('a')
+                for item in items:
+                    print("item:",item)
+                    link = item['href']
+                    fauna = item.get_text()                       
+                    datum = [category,link,fauna]
                     print("Next: ",item)
-                    datalist.append(item)
+                    datalist.append(datum)
+
+            # if empty not including header
+            if len(datalist)<2:
+                raise BaseException("Get data error")
+
             # https://docs.python.org/3/library/csv.html
             with open(saveAsCSV, 'w') as csvfile:
                 csvwriter = csv.writer(csvfile=csvfile)
