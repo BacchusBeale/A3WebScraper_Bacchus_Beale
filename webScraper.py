@@ -85,25 +85,33 @@ class EnvironmentSpider:
                 print("row:",row)
                 th = row.th
                 category = th.get_text()
-                cell = row.find('td')
-                items = cell.find_all('a')
-                for item in items:
+                td = row.find('td')
+                anchor = td.find_all('a')
+                # total row has no links only summary
+                if (anchor is None) or (len(anchor)==0):
+                    total = ["Total", "", td.get_text()]
+                    datalist.append(total)
+                for item in anchor:
                     print("item:",item)
                     link = item['href']
                     fauna = item.get_text()                       
                     datum = [category,link,fauna]
-                    print("Next: ",item)
+                    print("Next: ",datum)
                     datalist.append(datum)
+
+            # debug
+            print("datalist: ", datalist)
 
             # if empty not including header
             if len(datalist)<2:
                 raise BaseException("Get data error")
 
             # https://docs.python.org/3/library/csv.html
-            with open(saveAsCSV, 'w') as csvfile:
-                csvwriter = csv.writer(csvfile=csvfile)
+            with open(saveAsCSV, 'w', newline='') as f:
+                csvwriter = csv.writer(f, delimiter=',')
                 csvwriter.writerow(csvheader)
-                csvwriter.writerows(datalist)
+                for data in datalist:
+                    csvwriter.writerow(data)
 
         except BaseException as e:
             print(f"Error: {str(e)}")
