@@ -72,6 +72,89 @@ class EnvironmentSpider:
         except BaseException as e:
             return f"Error {str(e)}"
 
+    def extractThreatsTable(self, saveAsCSV):
+        try:
+            csvheader = ["title", "FaunaType", "Category","hyperlink","Genus","CommonName","EffectiveDate"]
+            print(csvheader)
+            datalist = []
+            title=""
+            faunaType=""
+            category=""
+            genus=""
+            commonName=""
+            EffectiveDate=""
+
+            threatTable = self.soup.find(id="threatlist")
+            rows = threatTable.find_all('tr')
+            for r in rows:
+                isDataRow=False
+                tdhead = r.find('td', class_='bold larger')# find sub header
+                if tdhead is not None:
+                    anchor = tdhead.find('a')
+                    if anchor:
+                        title=anchor.get_text()
+                        name = anchor['name']
+                        print(f"name: {name}")
+                        index = name.find('_')
+                        if index>=0:
+                            faunaType=name[0:index]
+                            print(f"faunaType; {faunaType}")
+                            category=name[index+1:]
+                            print(f"category: {category}")
+                # is it header row?
+                isbold=False
+                rowclasses = r['class']
+                print(f"row classes: {rowclasses}")
+                if rowclasses is not None:
+                    if isinstance(rowclasses, str):
+                        index = rowclasses.find('bold')
+                        isbold = (index>=0)
+                # skip: do nothing
+                if isbold:
+                    continue
+
+                # is it data?
+                isDataRow = False
+                rowclasses = r['class']
+                print(f"row classes: {rowclasses}")
+                if rowclasses is not None:
+                    if isinstance(rowclasses, str):
+                        index = rowclasses.find('odd')
+                        isDataRow = (index>=0)
+                        if not isDataRow:
+                            index = rowclasses.find('even')
+                            isDataRow = (index>=0)
+                if isDataRow:
+                    cells = r.find_all('td')
+                    count=0 # 3 data columns
+                    for td in cells:
+                        count+=1
+                        if count==1:
+                            hyperlink=td.a['href']
+                            genus=td.a.i.get_text()
+                        elif count==2:
+                            commonName=td.get_text()
+                        elif count==3:
+                            EffectiveDate=td.get_text()
+
+                    datum = [title, faunaType, category, hyperlink, genus, commonName, EffectiveDate]
+                    print(f"Datum: {datum}")
+                    datalist.append(datum)
+
+# csvheader = ["title", "FaunaType", "Category","hyperlink","Genus","CommonName","EffectiveDate"]
+
+        # https://docs.python.org/3/library/csv.html
+            with open(saveAsCSV, 'w', newline='') as f:
+                csvwriter = csv.writer(f, delimiter=',')
+                csvwriter.writerow(csvheader)
+                for data in datalist:
+                    csvwriter.writerow(data)
+
+        except BaseException as e:
+            print(f"Error: {str(e)}")
+            return False
+        return True
+
     def extractMainTable(self, saveAsCSV):
         try:
             csvheader = ["category", "hyperlink", "fauna"]
@@ -139,6 +222,8 @@ def runSpider():
         if ok:
             ok = spider.parseMainPage()
             print(f"Page parsed = {ok}")
+
+            ok = spider.extractThreatsTable(saveAsCSV='threatstable.csv')
     else:
         print("Load from web")
         ok = spider.loadMainPage(webaddress=weburl)
