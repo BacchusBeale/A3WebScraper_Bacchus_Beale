@@ -85,8 +85,14 @@ class EnvironmentSpider:
             EffectiveDate=""
 
             threatTable = self.soup.find(id="threatlist")
+
             rows = threatTable.find_all('tr')
             for r in rows:
+                # row attributes
+                props = None 
+                if r.attrs:
+                    props = r.attrs
+
                 isDataRow=False
                 tdhead = r.find('td', class_='bold larger')# find sub header
                 if tdhead is not None:
@@ -101,45 +107,45 @@ class EnvironmentSpider:
                             print(f"faunaType; {faunaType}")
                             category=name[index+1:]
                             print(f"category: {category}")
+                
+
+                if not props:
+                    continue
+
                 # is it header row?
                 isbold=False
-                rowclasses = r['class']
-                print(f"row classes: {rowclasses}")
-                if rowclasses is not None:
-                    if isinstance(rowclasses, str):
-                        index = rowclasses.find('bold')
-                        isbold = (index>=0)
-                # skip: do nothing
-                if isbold:
-                    continue
+                if 'class' in props: # not all tags have a class
+                    rowclasses = props['class']
+                    print(f"Bold: row classes: {rowclasses}")
+                    isbold = ('bold' in rowclasses)
+                    # skip: do nothing
+                    if isbold:
+                        continue
 
                 # is it data?
                 isDataRow = False
-                rowclasses = r['class']
-                print(f"row classes: {rowclasses}")
-                if rowclasses is not None:
-                    if isinstance(rowclasses, str):
-                        index = rowclasses.find('odd')
-                        isDataRow = (index>=0)
-                        if not isDataRow:
-                            index = rowclasses.find('even')
-                            isDataRow = (index>=0)
-                if isDataRow:
-                    cells = r.find_all('td')
-                    count=0 # 3 data columns
-                    for td in cells:
-                        count+=1
-                        if count==1:
-                            hyperlink=td.a['href']
-                            genus=td.a.i.get_text()
-                        elif count==2:
-                            commonName=td.get_text()
-                        elif count==3:
-                            EffectiveDate=td.get_text()
+                if 'class' in props: # not all tags have a class
+                    rowclasses = props['class']
+                    print(f"Data: row classes: {rowclasses}")
+                    isDataRow = ('odd' in rowclasses)
+                    if not isDataRow:
+                        isDataRow = ('even' in rowclasses)
+                    if isDataRow:
+                        cells = r.find_all('td')
+                        count=0 # 3 data columns
+                        for td in cells:
+                            count+=1
+                            if count==1:
+                                hyperlink=td.a['href']
+                                genus=td.a.i.get_text()
+                            elif count==2:
+                                commonName=td.get_text()
+                            elif count==3:
+                                EffectiveDate=td.get_text()
 
-                    datum = [title, faunaType, category, hyperlink, genus, commonName, EffectiveDate]
-                    print(f"Datum: {datum}")
-                    datalist.append(datum)
+                        datum = [title, faunaType, category, hyperlink, genus, commonName, EffectiveDate]
+                        print(f"Datum: {datum}")
+                        datalist.append(datum)
 
 # csvheader = ["title", "FaunaType", "Category","hyperlink","Genus","CommonName","EffectiveDate"]
 
@@ -222,8 +228,6 @@ def runSpider():
         if ok:
             ok = spider.parseMainPage()
             print(f"Page parsed = {ok}")
-
-            ok = spider.extractThreatsTable(saveAsCSV='threatstable.csv')
     else:
         print("Load from web")
         ok = spider.loadMainPage(webaddress=weburl)
@@ -236,8 +240,9 @@ def runSpider():
     
     if ok:
         print("Web scraping started...")
-        spider.showPageHeaders()
-        spider.extractMainTable(saveAsCSV="maintable.csv")
+        #spider.showPageHeaders()
+        #spider.extractMainTable(saveAsCSV="maintable.csv")
+        ok = spider.extractThreatsTable(saveAsCSV='threatstable.csv')
     else:
         print("Can't load website")
     
