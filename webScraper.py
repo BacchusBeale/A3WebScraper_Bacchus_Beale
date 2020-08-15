@@ -240,8 +240,8 @@ def runSpider():
     
     if ok:
         print("Web scraping started...")
-        #spider.showPageHeaders()
-        #spider.extractMainTable(saveAsCSV="maintable.csv")
+        spider.showPageHeaders()
+        spider.extractMainTable(saveAsCSV="maintable.csv")
         ok = spider.extractThreatsTable(saveAsCSV='threatstable.csv')
     else:
         print("Can't load website")
